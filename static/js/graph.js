@@ -4,6 +4,12 @@ queue()
     
 function makeGraphs(error, salaryData) {
   var ndx = crossfilter(salaryData);
+  
+  
+  salaryData.forEach(function(d){
+        d.salary = parseInt(d.salary);
+    })
+    
     
      show_discipline_selector(ndx);
      show_gender_balance(ndx);
