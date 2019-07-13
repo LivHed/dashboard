@@ -3,19 +3,17 @@ queue()
     .await(makeGraphs);
     
 function makeGraphs(error, salaryData) {
-  var ndx = crossfilter(salaryData);
-  
-  
-  salaryData.forEach(function(d){
+    var ndx = crossfilter(salaryData);
+    
+    salaryData.forEach(function(d){
         d.salary = parseInt(d.salary);
     })
     
+    show_discipline_selector(ndx);
+    show_gender_balance(ndx);
+    show_average_salary(ndx);
+    show_rank_distribution(ndx);
     
-     show_discipline_selector(ndx);
-     show_gender_balance(ndx);
-     show_average_salary(ndx);
-     show_rank_distribution(ndx);
-     
     dc.renderAll();
 }
 
@@ -28,10 +26,10 @@ function show_discipline_selector(ndx) {
         .group(group);
 }
 
+
 function show_gender_balance(ndx) {
     var dim = ndx.dimension(dc.pluck('sex'));
     var group = dim.group();
-    
     
     dc.barChart("#gender-balance")
         .width(400)
@@ -44,8 +42,8 @@ function show_gender_balance(ndx) {
         .xUnits(dc.units.ordinal)
         .xAxisLabel("Gender")
         .yAxis().ticks(20);
-    
 }
+
 
 function show_average_salary(ndx) {
     var dim = ndx.dimension(dc.pluck('sex'));
@@ -66,16 +64,15 @@ function show_average_salary(ndx) {
             p.total -= v.salary;
             p.average = p.total / p.count;
         }
-         return p;
+        return p;
     }
     
     function initialise() {
         return {count: 0, total: 0, average: 0};
     }
 
-
     var averageSalaryByGender = dim.group().reduce(add_item, remove_item, initialise);
-    
+
     dc.barChart("#average-salary")
         .width(400)
         .height(300)
@@ -90,14 +87,13 @@ function show_average_salary(ndx) {
         .xUnits(dc.units.ordinal)
         .elasticY(true)
         .xAxisLabel("Gender")
-        .yAxis().ticks(4);   
+        .yAxis().ticks(4);
 }
 
 
 function show_rank_distribution(ndx) {
     
-
-    function rankByGender (dimension, rank) {
+    function rankByGender(dimension, rank) {
         return dimension.group().reduce(
             function (p, v) {
                 p.total++;
@@ -118,11 +114,28 @@ function show_rank_distribution(ndx) {
             }
         );
     }
-
-    var  dim = ndx.dimension(dc.pluck('sex'));
+    
+    var dim = ndx.dimension(dc.pluck("sex"));
     var profByGender = rankByGender(dim, "Prof");
     var asstProfByGender = rankByGender(dim, "AsstProf");
     var assocProfByGender = rankByGender(dim, "AssocProf");
     
-
+    dc.barChart("#rank-distribution")
+        .width(400)
+        .height(300)
+        .dimension(dim)
+        .group(profByGender, "Prof")
+        .stack(asstProfByGender, "Asst Prof")
+        .stack(assocProfByGender, "Assoc Prof")
+        .valueAccessor(function(d) {
+            if(d.value.total > 0) {
+                return (d.value.match / d.value.total) * 100;
+            } else {
+                return 0;
+            }
+        })
+        .x(d3.scale.ordinal())
+        .xUnits(dc.units.ordinal)
+        .legend(dc.legend().x(320).y(20).itemHeight(15).gap(5))
+        .margins({top: 10, right: 100, bottom: 30, left: 30});
 }
